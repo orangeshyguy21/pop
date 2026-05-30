@@ -19,6 +19,12 @@ interface CardNode {
   rect: Rect;
   sprite: Sprite;
   handle: CardTextureHandle;
+  baseScale: number; // texture->world scale (1); reveal multiplies this
+  dim: number; // search alpha (1 or DIM_ALPHA)
+  revealed: boolean; // first-reveal done -> never animates again
+  revealing: boolean;
+  revealT: number; // ms elapsed since entering the reveal viewport
+  delay: number; // ms stagger before the fade starts
 }
 
 const FRICTION = 0.9; // per-frame velocity decay
@@ -28,10 +34,20 @@ const RUBBER = 0.4;
 const BG_COLOR = 0xf2f1ee;
 const DIM_ALPHA = 0.18;
 
+// Card reveal (Emil: subtle, <300ms, fires once per card, ease-out).
+const REVEAL_MS = 260;
+const REVEAL_DELAY_MAX = 140; // cap on the distance-from-center stagger
+const REVEAL_SCALE_FROM = 0.96; // never from scale(0)
+const REVEAL_MARGIN = 0.4; // pre-roll: start fading before the card is on-screen
+
 function softClamp(v: number, min: number, max: number): number {
   if (v < min) return min + (v - min) * RUBBER;
   if (v > max) return max + (v - max) * RUBBER;
   return v;
+}
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 /**
@@ -63,7 +79,13 @@ export class CanvasController {
   private lodCb: ((mode: LodMode, ids: string[]) => void) | null = null;
   private destroyed = false;
 
+  private reducedMotion = false;
+  private lastDtMs = 1000 / 60;
+
   async mount(el: HTMLDivElement): Promise<void> {
+    this.reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     const app = new Application();
     await app.init({
       resizeTo: el,
@@ -93,11 +115,26 @@ export class CanvasController {
       if (!rect) continue;
       const handle = buildCardTexture(post);
       const sprite = new Sprite(handle.texture);
-      sprite.width = handle.cssWidth;
-      sprite.height = handle.cssHeight;
-      sprite.position.set(rect.x - handle.offset, rect.y - handle.offset);
+      // anchor at centre so the reveal scales from the card's middle
+      sprite.anchor.set(0.5);
+      const baseScale = handle.cssWidth / (handle.texture.width || handle.cssWidth);
+      sprite.position.set(rect.x + rect.w / 2, rect.y + rect.h / 2);
+      const shown = this.reducedMotion;
+      sprite.alpha = shown ? 1 : 0;
+      sprite.scale.set(baseScale * (shown ? 1 : REVEAL_SCALE_FROM));
       this.world.addChild(sprite);
-      this.nodes.set(post.id, { post, rect, sprite, handle });
+      this.nodes.set(post.id, {
+        post,
+        rect,
+        sprite,
+        handle,
+        baseScale,
+        dim: 1,
+        revealed: shown,
+        revealing: false,
+        revealT: 0,
+        delay: 0,
+      });
     }
     this.applyMatches();
     this.fitAll(false);
@@ -110,11 +147,10 @@ export class CanvasController {
 
   private applyMatches(): void {
     for (const [id, node] of this.nodes) {
-      node.sprite.alpha = this.matches
-        ? this.matches.has(id)
-          ? 1
-          : DIM_ALPHA
-        : 1;
+      node.dim = this.matches ? (this.matches.has(id) ? 1 : DIM_ALPHA) : 1;
+      // already-revealed cards update instantly; revealing cards pick it up
+      // via the reveal loop (alpha = dim * eased).
+      if (node.revealed) node.sprite.alpha = node.dim;
     }
   }
 
@@ -215,6 +251,7 @@ export class CanvasController {
 
   private tick = (ticker: { deltaTime: number }): void => {
     const dt = Math.min(ticker.deltaTime, 3); // clamp huge frame gaps
+    this.lastDtMs = dt * (1000 / 60);
     const lim = panLimits(this.cam, this.vp, this.layout.bounds);
 
     if (this.target) {
@@ -260,9 +297,65 @@ export class CanvasController {
     // sync DOM overlay on the SAME frame
     this.cameraCb?.(this.cam);
 
-    // LOD + culling
+    // reveal newly-visible cards, then LOD + culling
+    this.updateReveals();
     this.updateLod();
   };
+
+  /** Expanded viewport rect in world coords (margin as a fraction of size). */
+  private viewportWorld(margin: number) {
+    const tl = screenToWorld(this.cam, 0, 0);
+    const br = screenToWorld(this.cam, this.vp.width, this.vp.height);
+    const mx = (br.x - tl.x) * margin;
+    const my = (br.y - tl.y) * margin;
+    return { x0: tl.x - mx, y0: tl.y - my, x1: br.x + mx, y1: br.y + my };
+  }
+
+  /**
+   * First-reveal fade for cards entering the viewport. Each card animates
+   * exactly once (Emil's restraint: re-entering must not re-animate, or panning
+   * becomes constant noise). Opacity + subtle scale, ease-out, with a
+   * distance-from-centre stagger so the initial wall cascades in.
+   */
+  private updateReveals(): void {
+    if (this.reducedMotion) return;
+    const v = this.viewportWorld(REVEAL_MARGIN);
+    const cx = this.vp.width / 2;
+    const cy = this.vp.height / 2;
+
+    for (const node of this.nodes.values()) {
+      if (node.revealed) continue;
+      const r = node.rect;
+      const inView =
+        r.x < v.x1 && r.x + r.w > v.x0 && r.y < v.y1 && r.y + r.h > v.y0;
+
+      if (!node.revealing) {
+        if (!inView) continue;
+        node.revealing = true;
+        node.revealT = 0;
+        const sx = (r.x + r.w / 2) * this.cam.scale + this.cam.x;
+        const sy = (r.y + r.h / 2) * this.cam.scale + this.cam.y;
+        node.delay = Math.min(
+          REVEAL_DELAY_MAX,
+          Math.hypot(sx - cx, sy - cy) * 0.18,
+        );
+      }
+
+      node.revealT += this.lastDtMs;
+      const t = Math.max(0, Math.min(1, (node.revealT - node.delay) / REVEAL_MS));
+      const e = easeOutCubic(t);
+      node.sprite.alpha = node.dim * e;
+      node.sprite.scale.set(
+        node.baseScale * (REVEAL_SCALE_FROM + (1 - REVEAL_SCALE_FROM) * e),
+      );
+      if (t >= 1) {
+        node.revealed = true;
+        node.revealing = false;
+        node.sprite.alpha = node.dim;
+        node.sprite.scale.set(node.baseScale);
+      }
+    }
+  }
 
   private updateLod(): void {
     const prev = this.lodMode;
@@ -272,17 +365,10 @@ export class CanvasController {
 
     let ids: string[] = [];
     if (this.lodMode === "near") {
-      const tl = screenToWorld(this.cam, 0, 0);
-      const br = screenToWorld(this.cam, this.vp.width, this.vp.height);
-      const mx = (br.x - tl.x) * 0.3;
-      const my = (br.y - tl.y) * 0.3;
-      const vx0 = tl.x - mx;
-      const vy0 = tl.y - my;
-      const vx1 = br.x + mx;
-      const vy1 = br.y + my;
+      const v = this.viewportWorld(0.3);
       for (const [id, node] of this.nodes) {
         const r = node.rect;
-        if (r.x < vx1 && r.x + r.w > vx0 && r.y < vy1 && r.y + r.h > vy0) {
+        if (r.x < v.x1 && r.x + r.w > v.x0 && r.y < v.y1 && r.y + r.h > v.y0) {
           ids.push(id);
         }
       }
