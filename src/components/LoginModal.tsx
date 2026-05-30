@@ -49,7 +49,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     >
       {mode === "login" ? (
         <>
-          <div className="mb-5 flex gap-1 rounded-xl bg-neutral-800/60 p-1">
+          <div className="mb-5 flex gap-1 rounded-xl bg-paper p-1">
             {TABS.map((t) => (
               <button
                 key={t.id}
@@ -58,8 +58,8 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                 className={
                   "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition " +
                   (tab === t.id
-                    ? "bg-neutral-700 text-neutral-100 shadow"
-                    : "text-neutral-400 hover:text-neutral-200")
+                    ? "bg-polaroid text-ink shadow"
+                    : "text-muted hover:text-ink")
                 }
               >
                 {t.label}
@@ -101,12 +101,12 @@ function ModeSwitch({
   onClick: () => void;
 }) {
   return (
-    <p className="mt-5 border-t border-neutral-800 pt-4 text-center text-sm text-neutral-400">
+    <p className="mt-5 border-t border-hairline pt-4 text-center text-sm text-muted">
       {prompt}{" "}
       <button
         type="button"
         onClick={onClick}
-        className="font-medium text-indigo-400 hover:underline"
+        className="font-medium text-ink hover:underline"
       >
         {action}
       </button>
@@ -115,7 +115,7 @@ function ModeSwitch({
 }
 
 function ErrorNote({ message }: { message: string }) {
-  return <p className="text-sm text-red-400">{message}</p>;
+  return <p className="text-sm text-red-500">{message}</p>;
 }
 
 function PrimaryButton({
@@ -134,7 +134,7 @@ function PrimaryButton({
       type="button"
       onClick={onClick}
       disabled={disabled || loading}
-      className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+      className="w-full rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink disabled:cursor-not-allowed disabled:opacity-50"
     >
       {loading ? "Connecting…" : children}
     </button>
@@ -155,18 +155,18 @@ function KeyField({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="text-xs font-medium uppercase tracking-wide text-muted">
           {label}
         </label>
         <button
           type="button"
           onClick={copy}
-          className="text-xs text-indigo-400 hover:underline"
+          className="text-xs text-ink hover:underline"
         >
           {copied ? "Copied!" : "Copy"}
         </button>
       </div>
-      <p className="break-all rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 font-mono text-xs text-neutral-200">
+      <p className="break-all rounded-lg border border-hairline bg-polaroid px-3 py-2 font-mono text-xs text-ink">
         {value}
       </p>
     </div>
@@ -194,7 +194,7 @@ function CreateTab({ onClose }: { onClose: () => void }) {
   if (keys) {
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-amber-900/60 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           🔑 This is your new account. Save your private key (
           <span className="font-mono">nsec</span>) somewhere safe — it's the{" "}
           <strong>only</strong> way to log back in, and it can never be
@@ -211,7 +211,7 @@ function CreateTab({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-neutral-300">
+      <p className="text-sm text-muted">
         New to Nostr? Create an account in one click. A private key is generated
         right here in your browser — it's never sent to any server.
       </p>
@@ -244,7 +244,7 @@ function ExtensionTab({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-neutral-300">
+      <p className="text-sm text-muted">
         Sign in with one click using your browser extension. Your private key
         never leaves the extension.
       </p>
@@ -253,13 +253,13 @@ function ExtensionTab({ onClose }: { onClose: () => void }) {
           Connect extension
         </PrimaryButton>
       ) : (
-        <div className="rounded-xl border border-neutral-800 bg-neutral-800/40 px-4 py-3 text-sm text-neutral-400">
+        <div className="rounded-xl border border-hairline bg-paper px-4 py-3 text-sm text-muted">
           No Nostr extension detected. Install{" "}
           <a
             href="https://getalby.com"
             target="_blank"
             rel="noreferrer"
-            className="text-indigo-400 hover:underline"
+            className="text-ink hover:underline"
           >
             Alby
           </a>{" "}
@@ -268,7 +268,7 @@ function ExtensionTab({ onClose }: { onClose: () => void }) {
             href="https://github.com/fiatjaf/nos2x"
             target="_blank"
             rel="noreferrer"
-            className="text-indigo-400 hover:underline"
+            className="text-ink hover:underline"
           >
             nos2x
           </a>
@@ -333,7 +333,7 @@ function BunkerTab({ onClose }: { onClose: () => void }) {
   if (connectUri) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-sm text-neutral-300">
+        <p className="text-sm text-muted">
           Scan with your signer app (nsec.app, Amber…), or copy the connection
           string.
         </p>
@@ -343,11 +343,11 @@ function BunkerTab({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={copyUri}
-          className="w-full truncate rounded-lg border border-neutral-800 bg-neutral-800/40 px-3 py-2 text-xs text-neutral-400 transition hover:text-neutral-200"
+          className="w-full truncate rounded-lg border border-hairline bg-paper px-3 py-2 text-xs text-muted transition hover:text-ink"
         >
           {copied ? "Copied!" : connectUri}
         </button>
-        <p className="animate-pulse text-sm text-neutral-400">
+        <p className="animate-pulse text-sm text-muted">
           Waiting for signer to connect…
         </p>
         {error && <ErrorNote message={error} />}
@@ -357,20 +357,20 @@ function BunkerTab({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-neutral-300">
+      <p className="text-sm text-muted">
         Connect a remote signer (nsec.app, nsecBunker, Amber). Your private key
         stays in the signer.
       </p>
 
       <div className="space-y-2">
-        <label className="block text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="block text-xs font-medium uppercase tracking-wide text-muted">
           Paste a bunker URL
         </label>
         <input
           value={uri}
           onChange={(e) => setUri(e.target.value)}
           placeholder="bunker://…"
-          className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-indigo-500"
+          className="w-full rounded-lg border border-hairline bg-polaroid px-3 py-2 text-sm text-ink outline-none focus:border-ink"
         />
         <PrimaryButton
           onClick={connectWithUrl}
@@ -381,26 +381,26 @@ function BunkerTab({ onClose }: { onClose: () => void }) {
         </PrimaryButton>
       </div>
 
-      <div className="flex items-center gap-3 text-xs uppercase text-neutral-600">
-        <span className="h-px flex-1 bg-neutral-800" />
+      <div className="flex items-center gap-3 text-xs uppercase text-muted">
+        <span className="h-px flex-1 bg-hairline" />
         or
-        <span className="h-px flex-1 bg-neutral-800" />
+        <span className="h-px flex-1 bg-hairline" />
       </div>
 
       <div className="space-y-2">
-        <label className="block text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="block text-xs font-medium uppercase tracking-wide text-muted">
           Connect with a QR code
         </label>
         <input
           value={relay}
           onChange={(e) => setRelay(e.target.value)}
           placeholder="wss://relay.nsec.app"
-          className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-indigo-500"
+          className="w-full rounded-lg border border-hairline bg-polaroid px-3 py-2 text-sm text-ink outline-none focus:border-ink"
         />
         <button
           type="button"
           onClick={generateQr}
-          className="w-full rounded-xl border border-neutral-700 px-4 py-2.5 text-sm font-semibold text-neutral-100 transition hover:bg-neutral-800"
+          className="w-full rounded-xl border border-hairline px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-paper"
         >
           Generate QR code
         </button>
@@ -442,7 +442,7 @@ function NsecTab({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-red-900/60 bg-red-950/40 px-4 py-3 text-sm text-red-200">
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
         ⚠️ Pasting your private key here is risky — any script on this page can
         read it, and a leaked nsec can never be recovered. Prefer an extension or
         remote signer. Only continue on a device you trust.
@@ -450,13 +450,13 @@ function NsecTab({ onClose }: { onClose: () => void }) {
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+          <label className="text-xs font-medium uppercase tracking-wide text-muted">
             Private key
           </label>
           <button
             type="button"
             onClick={paste}
-            className="text-xs text-indigo-400 hover:underline"
+            className="text-xs text-ink hover:underline"
           >
             Paste
           </button>
@@ -467,7 +467,7 @@ function NsecTab({ onClose }: { onClose: () => void }) {
           onChange={(e) => setNsec(e.target.value)}
           placeholder="nsec1…"
           autoComplete="off"
-          className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-indigo-500"
+          className="w-full rounded-lg border border-hairline bg-polaroid px-3 py-2 text-sm text-ink outline-none focus:border-ink"
         />
       </div>
 

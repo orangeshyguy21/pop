@@ -1,27 +1,46 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CanvasController, type LodMode } from "../canvas/CanvasController";
-import { useGuestbookEntries } from "../hooks/useGuestbookEntries";
+import type { Post } from "../types/post";
+import { AmbientBackground } from "../components/AmbientBackground";
 import { DetailModal } from "../components/DetailModal";
 import { DomOverlay } from "../components/DomOverlay";
 import { PixiStage } from "../components/PixiStage";
-import { SearchPill } from "../components/SearchPill";
 
-export function GuestbookCanvasPage({
-  host,
-  onClose,
+export type CanvasStatus = "loading" | "empty" | "ready";
+
+// Padding for the canvas's own bottom-right chrome (the ZoomControls), plus a
+// small left gutter. The top inset is supplied by the caller, which measures the
+// floating EventTopBar (placard + search) that overlays the wall.
+const RIGHT_INSET = 72;
+const BOTTOM_INSET = 72;
+const LEFT_INSET = 16;
+
+/**
+ * Presentational guestbook wall. Renders the supplied posts on the Pixi canvas
+ * (pan / zoom / detail). Search is controlled by the caller (the event top bar
+ * owns the input); we dim non-matching cards. Fills its parent — give it a
+ * sized container.
+ */
+export function GuestbookCanvas({
+  posts,
+  status,
+  query = "",
+  flashSignal = 0,
+  topInset = 0,
 }: {
-  host: string;
-  onClose?: () => void;
+  posts: Post[];
+  status: CanvasStatus;
+  query?: string;
+  flashSignal?: number;
+  /** Height (px) of the floating top chrome overlaying the wall. */
+  topInset?: number;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<CanvasController | null>(null);
-
-  const { posts, loading } = useGuestbookEntries(host);
-  const status = loading ? "loading" : posts.length ? "ready" : "empty";
+  const getCamera = useCallback(() => controllerRef.current?.getCamera(), []);
 
   const [ready, setReady] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
   const [lod, setLod] = useState<{ mode: LodMode; ids: string[] }>({
     mode: "far",
     ids: [],
@@ -60,6 +79,18 @@ export function GuestbookCanvasPage({
       controllerRef.current.setPosts(posts);
     }
   }, [ready, posts]);
+
+  // ---- reserve space for the floating chrome so panning locks to white space ----
+  useEffect(() => {
+    if (ready) {
+      controllerRef.current?.setInsets({
+        top: topInset,
+        right: RIGHT_INSET,
+        bottom: BOTTOM_INSET,
+        left: LEFT_INSET,
+      });
+    }
+  }, [ready, topInset]);
 
   // ---- search: dim non-matching cards in both layers ----
   const matches = useMemo<Set<string> | null>(() => {
@@ -107,7 +138,9 @@ export function GuestbookCanvasPage({
     : null;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#f2f1ee]">
+    <div className="relative h-full w-full overflow-hidden bg-paper">
+      <AmbientBackground getCamera={getCamera} flashSignal={flashSignal} />
+
       <PixiStage
         hostRef={hostRef}
         controllerRef={controllerRef}
@@ -123,19 +156,6 @@ export function GuestbookCanvasPage({
         />
       )}
 
-      {onClose && (
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute left-5 top-5 z-20 flex h-9 items-center gap-1 rounded-lg bg-white/90 px-3 text-sm font-medium text-neutral-700 shadow hover:bg-white"
-          aria-label="Back"
-        >
-          ← Back
-        </button>
-      )}
-
-      <SearchPill value={query} onChange={setQuery} />
-
       <ZoomControls
         onZoom={(f) =>
           controllerRef.current?.applyZoomAt(
@@ -149,17 +169,15 @@ export function GuestbookCanvasPage({
 
       {status === "loading" && (
         <Centered>
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
-          <span className="text-sm text-neutral-500">Loading the guestbook…</span>
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-hairline border-t-muted" />
+          <span className="text-sm text-muted">Developing the prints…</span>
         </Centered>
       )}
       {status === "empty" && (
         <Centered>
-          <span className="text-lg font-medium text-neutral-700">
-            No posts yet
-          </span>
-          <span className="text-sm text-neutral-500">
-            Be the first to sign this guestbook.
+          <span className="text-lg font-medium text-ink">A blank wall, for now</span>
+          <span className="text-sm text-muted">
+            Be the first to pin a note.
           </span>
         </Centered>
       )}
@@ -187,7 +205,7 @@ function ZoomControls({
   onFit: () => void;
 }) {
   const btn =
-    "flex h-9 w-9 items-center justify-center rounded-lg bg-white/90 text-neutral-700 shadow hover:bg-white";
+    "flex h-9 w-9 items-center justify-center rounded-lg bg-polaroid/90 text-ink shadow-sm backdrop-blur hover:bg-polaroid";
   return (
     <div className="absolute bottom-5 right-5 z-20 flex flex-col gap-2">
       <button type="button" className={btn} onClick={() => onZoom(1.2)} aria-label="Zoom in">
