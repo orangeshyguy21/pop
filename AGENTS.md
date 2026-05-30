@@ -1,62 +1,111 @@
 # AGENTS.md
 
-Guidance for AI agents working in this repo. Read this before making changes.
+Guidance for AI agents (and humans) working in this repo. Read this before making changes,
+and keep it current when you change architecture, conventions, or tooling.
 
-## What Pop is
+## Project
 
-**Pop** is a decentralized guestbook for events, built on [Nostr](https://nostr.com).
-A host spins up a guestbook for an event (wedding, conference, birthday, meetup);
-guests leave notes, drop photos, and zap the host a little money. There is no
-central server holding the data — every entry is a Nostr event, signed by its
-author and replicated across relays.
+Pop — a decentralized guestbook for events, built on [Nostr](https://nostr.com). A host spins up a
+guestbook for an event (wedding, conference, birthday, meetup); guests leave notes, drop photos, and
+zap the host a little money. See `README.md` for product context. Entries are signed Nostr events
+relayed across the network; there is no central backend holding the data.
 
 Core ideas:
 
 - **No central server owns the data.** Entries live on Nostr relays, signed by the guest who wrote them.
-- **Guestbooks are portable.** A guestbook is addressable by its Nostr event, readable by any Nostr-aware client.
+- **Guestbooks are portable.** A guestbook is an addressable Nostr event, readable by any Nostr-aware client.
 - **Tips are native.** Sending money to the host is a Lightning zap ([NIP-57](https://github.com/nostr-protocol/nips/blob/master/57.md)) — no processor, no account, no chargebacks.
 
-> Status: early scaffold. Only the shell exists — it connects to relays via NDK
-> and shows connection status. Most flows in the roadmap are unbuilt.
+## Stack & tooling
 
-## Tech stack
+- **React 19 + TypeScript**, built with **Vite 8**.
+- **Tailwind CSS v4** (via `@tailwindcss/vite`), imported in `src/index.css` as `@import "tailwindcss";`.
+  Styling is Tailwind utility classes only — no CSS-in-JS, no component library. The theme is dark:
+  `bg-neutral-950` / `text-neutral-100`, with `indigo-600` as the primary accent.
+- **[NDK](https://github.com/nostr-dev-kit/ndk)** (`@nostr-dev-kit/ndk`) for all Nostr work — relays,
+  signing, profiles, and (planned) zaps. Do not hand-roll protocol code; prefer NDK's helpers/signers.
+- **[Zustand](https://github.com/pmndrs/zustand) v5** (`persist` middleware) for client state.
+- **[qrcode.react](https://github.com/zpao/qrcode.react)** for rendering connection QR codes.
+- **Bun** is the package manager and runtime.
 
-- **React 19 + TypeScript** — UI
-- **Vite** — build / dev server
-- **Tailwind CSS v4** — styling (via `@tailwindcss/vite`)
-- **[NDK](https://github.com/nostr-dev-kit/ndk)** (`@nostr-dev-kit/ndk`) — Nostr client: relay pool, subscriptions, signing, zaps
-- **Bun** — package manager and runtime
+### Commands
 
-## Architecture & layout
+```bash
+bun install
+bun run dev      # vite dev server
+bun run build    # tsc -b && vite build  — must pass clean
+bun run lint     # eslint . — must pass clean
+```
+
+Always run `bun run build` and `bun run lint` before committing; both must exit 0. (Note: the build
+prints `eval` warnings originating from NDK's transitive `tseep` dependency — these are warnings, not
+errors, and do not fail the build.)
+
+## Layout
 
 ```
 src/
-  main.tsx        # React entry, mounts <App> in StrictMode
-  App.tsx         # current UI: connects to relays, renders connection status
-  lib/ndk.ts      # shared NDK singleton — relays, signing, zaps all flow through here
-  index.css       # Tailwind entry
-index.html        # Vite HTML entry
-public/           # favicon + icons
+  main.tsx              entry point
+  App.tsx               root: mounts <Header>, <LoginModal>, restores session, gates the Pop creator on auth
+  index.css             Tailwind import
+  lib/
+    ndk.ts              the shared `ndk` NDK singleton + connectNdk() (relays from VITE_RELAYS env)
+    pop.ts              Pop (guestbook) data model — POP_KIND, createPop(), fetchPops()
+  store/
+    auth.ts             Zustand auth store — single source of truth for identity
+  components/
+    Modal.tsx           generic portal modal (backdrop, Escape, click-outside, body-scroll-lock)
+    LoginModal.tsx      tabbed login UI built on <Modal>
+    Header.tsx          sticky top nav: login button / user chip + logout
+    PopCreator.tsx      host UI: create-a-Pop form + list of the host's Pops
 ```
 
-Key conventions:
+## Authentication architecture
 
-- **One shared NDK instance.** Everything Nostr goes through the singleton in
-  [`src/lib/ndk.ts`](src/lib/ndk.ts). Don't construct new `NDK` instances per component.
-  `connectNdk()` is idempotent — it caches the connect promise.
-- **Relays are configured via env.** `VITE_RELAYS` (comma-separated `wss://` URLs);
-  defaults to `wss://relay.damus.io,wss://nos.lol`.
-- Tailwind is utility-first inline; no component CSS files.
+Login supports the three standard Nostr methods, all via NDK signers. The flow lives in
+`src/store/auth.ts`.
 
-## Commands
+- **Browser extension (NIP-07)** — `new NDKNip07Signer()`. Recommended; default tab when
+  `window.nostr` is present.
+- **Remote signer / bunker (NIP-46)** — `NDKNip46Signer.bunker(ndk, "bunker://…")` for pasted bunker
+  URLs, and `NDKNip46Signer.nostrconnect(ndk, relay, undefined, opts)` for the client-initiated
+  `nostrconnect://` QR flow. Read `signer.nostrConnectUri` to render the QR; await
+  `signer.blockUntilReady()` to detect connection.
+- **Private key (nsec)** — `new NDKPrivateKeySigner(nsec)`. Pass the `nsec1…` string **directly** —
+  do NOT `nip19.decode()` it first. Discouraged in the UI behind a security warning.
 
-```bash
-bun install      # install deps
-bun dev          # dev server
-bun run build    # tsc -b && vite build
-bun run preview  # preview production build
-bun run lint     # eslint
-```
+### Conventions / invariants
+
+- **`ndk` is a singleton** (`src/lib/ndk.ts`). Always import it; never construct a second NDK. Login
+  sets `ndk.signer`; logout sets it to `undefined`.
+- **Session persistence uses NDK's payload mechanism, not bespoke per-method storage.** Each signer's
+  `signer.toPayload()` string is persisted; `ndkSignerFromPayload(payload, ndk)` rebuilds the correct
+  signer type on reload. `restore()` is called once from `App` on mount. When adding a new login
+  method, just store its `toPayload()` — do not invent new persistence.
+- **The Zustand store persists only `{ pubkey, method, signerPayload }`** (see `partialize`). Never
+  persist the live signer instance, `status`, or `profile`.
+- **Read the logged-in host from the store**, not `ndk.activeUser`: `useAuthStore((s) => s.pubkey)`
+  with `status === "authenticated"`. `App` gates the Pop creator on this.
+- **Security note:** nsec login persists the private key in plaintext in `localStorage`
+  (`pop-auth`), because `NDKPrivateKeySigner.toPayload()` embeds the hex key. This is an
+  intentional, documented tradeoff. If hardening later, NDK ships `nip49` for ncryptsec encryption.
+
+## Pop data model (guestbooks)
+
+A Pop is an **addressable / parameterized-replaceable event** (NIP-01 kind range 30000–39999) so a
+host can edit it in place and reference it by an `naddr` ([NIP-19](https://github.com/nostr-protocol/nips/blob/master/19.md)).
+The model lives in `src/lib/pop.ts`.
+
+- **`POP_KIND = 31337`** — Pop's own kind for guestbook events. (No NIP reserves a guestbook kind;
+  this is a bespoke addressable kind. Document any change here.)
+- **Tags:** `["d", <uuid>]` unique identifier · `["title", <event name>]` (NIP-23 convention) ·
+  `["alt", …]` ([NIP-31](https://github.com/nostr-protocol/nips/blob/master/31.md)) human-readable fallback.
+- **Content:** the guestbook description (plain text).
+- `createPop({ name, description })` publishes via `event.publish()` (NDK signs with `ndk.signer`).
+- `fetchPops(host)` queries `{ kinds: [POP_KIND], authors: [host] }` and dedupes by `d` tag (newest wins).
+- Share a Pop with `event.encode()` → `naddr`.
+
+Guestbook *entries* (notes/photos/zaps) are not built yet; see the NIP mapping below for the planned scheme.
 
 ---
 
@@ -81,7 +130,7 @@ every relay and every client.
 - `1000–9999`: regular (relays store all of them)
 - `10000–19999`: **replaceable** (relay keeps only the newest per `pubkey`+`kind`) — e.g. profile, relay list
 - `20000–29999`: **ephemeral** (relays don't store; used for transient signaling)
-- `30000–39999`: **addressable / parameterized-replaceable** (newest per `pubkey`+`kind`+`d`-tag) — the basis for "documents" like long-form posts, lists, and **likely Pop's guestbook + entries**
+- `30000–39999`: **addressable / parameterized-replaceable** (newest per `pubkey`+`kind`+`d`-tag) — the basis for "documents" like long-form posts, lists, and **Pop's guestbook** (kind `31337`, above)
 
 ## NIPs that power what Nostr can do
 
@@ -108,12 +157,12 @@ only what a use case needs. Distilled by capability:
 | [39](https://github.com/nostr-protocol/nips/blob/master/39.md) | Link external identities (GitHub, Twitter) to a profile |
 | [51](https://github.com/nostr-protocol/nips/blob/master/51.md) | Lists / sets (mute, pin, bookmarks, custom curated sets) |
 
-### Signing & key management (relevant to Pop's sign-in)
+### Signing & key management (Pop's login)
 
 | NIP | Capability |
 | --- | --- |
-| [07](https://github.com/nostr-protocol/nips/blob/master/07.md) | `window.nostr` browser-extension signer (Alby, nos2x). **Pop's primary host login.** Key never touches the app |
-| [46](https://github.com/nostr-protocol/nips/blob/master/46.md) | Remote signing ("Nostr Connect") — sign from a separate device/app |
+| [07](https://github.com/nostr-protocol/nips/blob/master/07.md) | `window.nostr` browser-extension signer (Alby, nos2x). **Pop's recommended host login.** Key never touches the app |
+| [46](https://github.com/nostr-protocol/nips/blob/master/46.md) | Remote signing ("Nostr Connect" / bunker) — sign from a separate device/app. **Implemented** (paste-bunker + QR) |
 | [49](https://github.com/nostr-protocol/nips/blob/master/49.md) | Encrypt an `nsec` with a passphrase for at-rest storage |
 | [42](https://github.com/nostr-protocol/nips/blob/master/42.md) | Client→relay authentication (for relays that gate read/write) |
 
@@ -178,8 +227,8 @@ only what a use case needs. Distilled by capability:
 
 | Pop feature | Likely NIP(s) |
 | --- | --- |
-| Sign in (host) | [07](https://github.com/nostr-protocol/nips/blob/master/07.md), fallback generated key + [49](https://github.com/nostr-protocol/nips/blob/master/49.md) |
-| Create a guestbook | addressable event (kind `30000`-range) with a `d` tag; reference via [19](https://github.com/nostr-protocol/nips/blob/master/19.md) `naddr` |
+| Sign in (host) | [07](https://github.com/nostr-protocol/nips/blob/master/07.md), [46](https://github.com/nostr-protocol/nips/blob/master/46.md) bunker/nostrconnect, nsec — **implemented** in `store/auth.ts` |
+| Create a guestbook | addressable event kind `31337` with a `d` tag; reference via [19](https://github.com/nostr-protocol/nips/blob/master/19.md) `naddr` — **implemented** in `lib/pop.ts` |
 | Leave a note | [22](https://github.com/nostr-protocol/nips/blob/master/22.md) comment tagged to the guestbook `naddr`, or a plain note |
 | Attach a photo | [B7](https://github.com/nostr-protocol/nips/blob/master/B7.md) Blossom upload + [92](https://github.com/nostr-protocol/nips/blob/master/92.md)/[94](https://github.com/nostr-protocol/nips/blob/master/94.md) metadata |
 | Zap the host | [57](https://github.com/nostr-protocol/nips/blob/master/57.md) (host needs `lud16` on kind `0`) |
@@ -187,14 +236,18 @@ only what a use case needs. Distilled by capability:
 | Knowing which relays to hit | [65](https://github.com/nostr-protocol/nips/blob/master/65.md) relay lists |
 | Host moderation | [09](https://github.com/nostr-protocol/nips/blob/master/09.md) deletion requests, [56](https://github.com/nostr-protocol/nips/blob/master/56.md) reporting |
 
-> These are design directions, not yet implemented. Confirm the kind/tag scheme
+> Entry/zap rows are design directions, not yet implemented. Confirm the kind/tag scheme
 > before building a flow — pick the smallest set of NIPs that satisfies it.
 
-## Working agreements for agents
+## Style & working agreements
 
-- Keep all Nostr access flowing through the single NDK instance in [`src/lib/ndk.ts`](src/lib/ndk.ts).
-- Don't hardcode relay URLs in components; use the env-driven list.
+- Keep all Nostr access flowing through the single NDK instance in `src/lib/ndk.ts`.
+- Don't hardcode relay URLs in components; use the env-driven list (`VITE_RELAYS`).
 - Prefer existing NDK helpers (signers, zapper, fetchEvents/subscribe) over hand-rolling relay messages.
-- When introducing a new event kind or tag scheme, document the choice and cite the NIP.
-- Match the existing style: TypeScript, functional React components, Tailwind utilities inline. Run `bun run lint` before finishing.
-- This is a WIP scaffold — don't assume flows exist; check the code.
+- When introducing a new event kind or tag scheme, document the choice and cite the NIP (see the Pop data model above).
+- All UI is dark-themed Tailwind; match the existing `neutral`/`indigo` palette and the rounded,
+  bordered panel style used in `Modal.tsx` / `Header.tsx`.
+- Match the surrounding code: TypeScript, functional React components, named exports for components.
+- Keep comments sparse and purposeful (explain *why*, mirror the existing density).
+- New dependencies should be justified and minimal — the project deliberately keeps a small footprint.
+- Run `bun run build` and `bun run lint` before finishing; both must pass clean.

@@ -1,32 +1,68 @@
 import { useEffect, useState } from "react";
-import { NDKNip07Signer } from "@nostr-dev-kit/ndk";
-import { connectNdk, ndk } from "./lib/ndk";
+import { Header } from "./components/Header";
+import { LoginModal } from "./components/LoginModal";
 import { PopCreator } from "./components/PopCreator";
+import { connectNdk, ndk } from "./lib/ndk";
+import { useAuthStore } from "./store/auth";
 
 function App() {
   const [status, setStatus] = useState<"connecting" | "connected" | "error">(
     "connecting",
   );
+  const [loginOpen, setLoginOpen] = useState(false);
 
   useEffect(() => {
     connectNdk()
       .then(() => setStatus("connected"))
       .catch(() => setStatus("error"));
+    // Rebuild a persisted Nostr session, if any.
+    void useAuthStore.getState().restore();
   }, []);
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center gap-8 px-6 py-16">
-      <div className="text-center space-y-3">
-        <h1 className="text-4xl font-bold tracking-tight">Pop</h1>
-        <p className="text-neutral-400 max-w-md">
-          Decentralized guestbooks for events, on Nostr. Leave notes, drop
-          photos, zap the host.
-        </p>
-        <ConnectionStatus status={status} />
-      </div>
+    <div className="min-h-screen bg-neutral-950 text-neutral-100">
+      <Header onLoginClick={() => setLoginOpen(true)} />
 
-      <Host />
-    </main>
+      <main className="flex flex-col items-center gap-8 px-6 py-16">
+        <div className="text-center space-y-3">
+          <h1 className="text-4xl font-bold tracking-tight">Pop</h1>
+          <p className="text-neutral-400 max-w-md">
+            Decentralized guestbooks for events, on Nostr. Leave notes, drop
+            photos, zap the host.
+          </p>
+          <ConnectionStatus status={status} />
+        </div>
+
+        <CreatorSection onLoginClick={() => setLoginOpen(true)} />
+      </main>
+
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+    </div>
+  );
+}
+
+function CreatorSection({ onLoginClick }: { onLoginClick: () => void }) {
+  const status = useAuthStore((s) => s.status);
+  const pubkey = useAuthStore((s) => s.pubkey);
+
+  if (status === "authenticated" && pubkey) {
+    return <PopCreator host={pubkey} />;
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-3 text-center">
+      <p className="text-sm text-neutral-500">
+        Log in to create a Pop for your event.
+      </p>
+      <button
+        type="button"
+        onClick={onLoginClick}
+        disabled={status === "connecting"}
+        className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+      >
+        {status === "connecting" ? "Connecting…" : "Log in"}
+      </button>
+    </div>
   );
 }
 
@@ -57,42 +93,6 @@ function ConnectionStatus({
       </span>
     </div>
   );
-}
-
-// TEMP: dev-only sign-in so the Pop creator is testable. Replace with the real
-// login flow — it just needs to set `ndk.signer` and provide the host pubkey.
-function Host() {
-  const [pubkey, setPubkey] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function signIn() {
-    setError(null);
-    try {
-      const signer = new NDKNip07Signer();
-      const user = await signer.user();
-      ndk.signer = signer;
-      ndk.activeUser = user;
-      setPubkey(user.pubkey);
-    } catch {
-      setError("No Nostr extension found (NIP-07).");
-    }
-  }
-
-  if (!pubkey) {
-    return (
-      <div className="flex flex-col items-center gap-2">
-        <button
-          onClick={signIn}
-          className="rounded-lg border border-neutral-700 px-4 py-2 text-sm font-medium transition hover:border-neutral-500"
-        >
-          Sign in with Nostr
-        </button>
-        {error && <p className="text-sm text-red-400">{error}</p>}
-      </div>
-    );
-  }
-
-  return <PopCreator host={pubkey} />;
 }
 
 export default App;
