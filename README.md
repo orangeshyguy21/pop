@@ -28,21 +28,23 @@ Traditional guestbook apps lock your memories inside someone else's database. Gu
 
 ## Tech stack
 
-- **Nostr** — event storage, identity, and signing
-- **NIP-07** — browser-extension key signing for guests and hosts
-- **NIP-57** — Lightning zaps for sending money to the host
+- **[React](https://react.dev)** + **[TypeScript](https://www.typescriptlang.org)** — UI
+- **[Vite](https://vite.dev)** — build tooling / dev server
+- **[Tailwind CSS](https://tailwindcss.com)** (v4) — styling
+- **[Nostr Dev Kit (NDK)](https://github.com/nostr-dev-kit/ndk)** — Nostr client, relay management, signing, and zaps
+- **[Bun](https://bun.sh)** — package manager and runtime
+- **NIP-07** — browser-extension key signing (via NDK's `NDKNip07Signer`)
+- **NIP-57** — Lightning zaps for sending money to the host (via NDK's zap helpers)
 - **NIP-94 / Blossom** — image attachments (hosted media referenced from entries)
-
-> The exact relay set, media host, and frontend framework are configurable — see [Configuration](#configuration).
 
 ## Getting started
 
-> _Work in progress — the app is not yet implemented. The steps below describe the intended setup._
+> _Work in progress — only the shell is scaffolded so far. It connects to relays via NDK and shows connection status._
 
 ### Prerequisites
 
-- Node.js (LTS)
-- A Nostr signing extension such as [Alby](https://getalby.com) or [nos2x] for hosts
+- [Bun](https://bun.sh) (v1.3+)
+- A Nostr signing extension such as [Alby](https://getalby.com) or [nos2x](https://github.com/fiatjaf/nos2x) for hosts
 - A Lightning address on the host's Nostr profile to receive zaps
 
 ### Install
@@ -50,27 +52,37 @@ Traditional guestbook apps lock your memories inside someone else's database. Gu
 ```bash
 git clone <repo-url> guestbookr
 cd guestbookr
-npm install
+bun install
 ```
 
 ### Run
 
 ```bash
-npm run dev
+bun dev
+```
+
+Other scripts:
+
+```bash
+bun run build    # production build
+bun run preview  # preview the production build
+bun run lint     # lint
 ```
 
 ## Configuration
 
-Settings such as the default relay list and media upload endpoint are configured via environment variables:
+Relays are configured via a Vite environment variable. Create a `.env` (or `.env.local`):
 
 ```bash
-# .env
-RELAYS=wss://relay.damus.io,wss://nos.lol
-MEDIA_UPLOAD_URL=https://...
+# defaults to wss://relay.damus.io,wss://nos.lol if unset
+VITE_RELAYS=wss://relay.damus.io,wss://nos.lol
 ```
+
+The shared NDK instance lives in [`src/lib/ndk.ts`](src/lib/ndk.ts) — relays, signing, and zaps all flow through it.
 
 ## Roadmap
 
+- [x] Project shell (React + Vite + Tailwind + NDK, relay connection)
 - [ ] Host guestbook creation flow
 - [ ] Guest note + image posting
 - [ ] Lightning zap integration
