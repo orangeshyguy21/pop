@@ -2,14 +2,18 @@ import { useEffect, useState } from "react";
 import { Header } from "./components/Header";
 import { LoginModal } from "./components/LoginModal";
 import { PopCreator } from "./components/PopCreator";
+import { GuestbookCanvasPage } from "./pages/GuestbookCanvasPage";
 import { connectNdk, ndk } from "./lib/ndk";
 import { useAuthStore } from "./store/auth";
+
+type View = "home" | "canvas";
 
 function App() {
   const [status, setStatus] = useState<"connecting" | "connected" | "error">(
     "connecting",
   );
   const [loginOpen, setLoginOpen] = useState(false);
+  const [view, setView] = useState<View>("home");
 
   useEffect(() => {
     connectNdk()
@@ -18,6 +22,10 @@ function App() {
     // Rebuild a persisted Nostr session, if any.
     void useAuthStore.getState().restore();
   }, []);
+
+  if (view === "canvas") {
+    return <GuestbookCanvasPage onClose={() => setView("home")} />;
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
@@ -36,6 +44,13 @@ function App() {
             photos, zap the host.
           </p>
           <ConnectionStatus status={status} />
+          <button
+            type="button"
+            onClick={() => setView("canvas")}
+            className="mt-1 rounded-xl border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-200 transition hover:border-neutral-500 hover:text-white"
+          >
+            View the guestbook →
+          </button>
         </div>
 
         <CreatorSection onLoginClick={() => setLoginOpen(true)} />
