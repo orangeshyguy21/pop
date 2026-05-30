@@ -94,8 +94,16 @@ export function ImageCropField({
   const boxSize = fill ? "h-full w-full" : "w-full";
   const pick = () => fileInputRef.current?.click();
 
+  // In `fill` mode the box sizes to its parent, so the root must fill it too —
+  // otherwise an intermediate auto-height div collapses and squashes the box.
+  const rootCls =
+    className ??
+    [fill ? "h-full w-full" : "", overlayControls ? "" : "space-y-1.5"]
+      .join(" ")
+      .trim();
+
   return (
-    <div className={className ?? (overlayControls ? undefined : "space-y-1.5")}>
+    <div className={rootCls || undefined}>
       {!hideLabel && <span className="text-sm text-muted">{label}</span>}
 
       {value ? (
@@ -162,7 +170,7 @@ export function ImageCropField({
             boxSize
           }
         >
-          <span className="text-2xl leading-none">＋</span>
+          <span className="text-2xl leading-none text-terracotta">＋</span>
           {!circle && <span className="text-sm">Add {label.toLowerCase()}</span>}
         </button>
       )}
