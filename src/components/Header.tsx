@@ -33,7 +33,7 @@ export function Header({ onLoginClick }: HeaderProps) {
   const avatar = profile?.picture || profile?.image;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-hairline bg-paper/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-hairline bg-polaroid/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
         <Link to="/" className="flex items-center gap-2">
           <img src="/pop.png" alt="Pop logo" className="h-8 w-8 rounded-lg" />
@@ -83,7 +83,7 @@ export function Header({ onLoginClick }: HeaderProps) {
             type="button"
             onClick={onLoginClick}
             disabled={status === "connecting"}
-            className="rounded-xl bg-terracotta px-4 py-2 text-sm font-semibold text-polaroid transition hover:bg-terracotta-deep disabled:opacity-50"
+            className="rounded-xl bg-terracotta px-4 py-2 text-sm font-semibold text-polaroid transition hover:bg-terracotta-deep active:translate-y-px disabled:opacity-50 disabled:active:translate-y-0"
           >
             {status === "connecting" ? "Connecting…" : "Log in"}
           </button>

@@ -75,7 +75,7 @@ function CreatePopForm() {
 
       {/* Profile-header composition: banner with the cover photo overlapping
           its bottom edge — this is exactly how the event page reads. */}
-      <div className="overflow-hidden rounded-2xl border border-hairline bg-polaroid">
+      <div className="overflow-hidden rounded-2xl border border-hairline bg-polaroid shadow-[0_8px_28px_rgba(36,30,26,0.10)]">
         <div className="relative">
           <ImageCropField
             label="Banner"
@@ -132,7 +132,7 @@ function CreatePopForm() {
       <button
         type="submit"
         disabled={!canSubmit}
-        className="w-full rounded-lg bg-terracotta px-4 py-2.5 text-sm font-semibold text-polaroid transition hover:bg-terracotta-deep disabled:cursor-not-allowed disabled:opacity-40"
+        className="w-full rounded-lg bg-terracotta px-4 py-2.5 text-sm font-semibold text-polaroid transition hover:bg-terracotta-deep active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40 disabled:active:translate-y-0"
       >
         {submitting ? "Publishing…" : "Create event"}
       </button>
@@ -159,7 +159,7 @@ function PopList({ pops, loading }: { pops: Pop[]; loading: boolean }) {
         {pops.map((pop) => (
           <li
             key={pop.id}
-            className="rounded-xl border border-hairline bg-polaroid p-4"
+            className="rounded-xl border border-hairline bg-polaroid p-4 shadow-sm transition hover:shadow-[0_8px_28px_rgba(36,30,26,0.10)]"
           >
             <Link to={`/e/${pop.nevent}`} className="flex items-start gap-3">
               {pop.picture && (

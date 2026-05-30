@@ -49,7 +49,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     >
       {mode === "login" ? (
         <>
-          <div className="mb-5 flex gap-1 rounded-xl bg-neutral-100 p-1">
+          <div className="mb-5 flex gap-1 rounded-xl bg-paper p-1">
             {TABS.map((t) => (
               <button
                 key={t.id}
@@ -58,8 +58,8 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                 className={
                   "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition " +
                   (tab === t.id
-                    ? "bg-white text-neutral-900 shadow"
-                    : "text-neutral-500 hover:text-neutral-800")
+                    ? "bg-polaroid text-ink shadow"
+                    : "text-muted hover:text-ink")
                 }
               >
                 {t.label}
@@ -101,7 +101,7 @@ function ModeSwitch({
   onClick: () => void;
 }) {
   return (
-    <p className="mt-5 border-t border-neutral-200 pt-4 text-center text-sm text-neutral-500">
+    <p className="mt-5 border-t border-hairline pt-4 text-center text-sm text-muted">
       {prompt}{" "}
       <button
         type="button"
@@ -155,7 +155,7 @@ function KeyField({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="text-xs font-medium uppercase tracking-wide text-muted">
           {label}
         </label>
         <button
@@ -166,7 +166,7 @@ function KeyField({ label, value }: { label: string; value: string }) {
           {copied ? "Copied!" : "Copy"}
         </button>
       </div>
-      <p className="break-all rounded-lg border border-neutral-200 bg-white px-3 py-2 font-mono text-xs text-neutral-700">
+      <p className="break-all rounded-lg border border-hairline bg-polaroid px-3 py-2 font-mono text-xs text-ink">
         {value}
       </p>
     </div>
@@ -253,7 +253,7 @@ function ExtensionTab({ onClose }: { onClose: () => void }) {
           Connect extension
         </PrimaryButton>
       ) : (
-        <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-500">
+        <div className="rounded-xl border border-hairline bg-paper px-4 py-3 text-sm text-muted">
           No Nostr extension detected. Install{" "}
           <a
             href="https://getalby.com"
@@ -337,17 +337,17 @@ function BunkerTab({ onClose }: { onClose: () => void }) {
           Scan with your signer app (nsec.app, Amber…), or copy the connection
           string.
         </p>
-        <div className="mx-auto w-fit rounded-xl bg-white p-3">
+        <div className="mx-auto w-fit rounded-xl bg-polaroid p-3">
           <QRCodeSVG value={connectUri} size={196} />
         </div>
         <button
           type="button"
           onClick={copyUri}
-          className="w-full truncate rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-500 transition hover:text-neutral-800"
+          className="w-full truncate rounded-lg border border-hairline bg-paper px-3 py-2 text-xs text-muted transition hover:text-ink"
         >
           {copied ? "Copied!" : connectUri}
         </button>
-        <p className="animate-pulse text-sm text-neutral-500">
+        <p className="animate-pulse text-sm text-muted">
           Waiting for signer to connect…
         </p>
         {error && <ErrorNote message={error} />}
@@ -363,7 +363,7 @@ function BunkerTab({ onClose }: { onClose: () => void }) {
       </p>
 
       <div className="space-y-2">
-        <label className="block text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="block text-xs font-medium uppercase tracking-wide text-muted">
           Paste a bunker URL
         </label>
         <input
@@ -381,14 +381,14 @@ function BunkerTab({ onClose }: { onClose: () => void }) {
         </PrimaryButton>
       </div>
 
-      <div className="flex items-center gap-3 text-xs uppercase text-neutral-400">
-        <span className="h-px flex-1 bg-neutral-200" />
+      <div className="flex items-center gap-3 text-xs uppercase text-muted">
+        <span className="h-px flex-1 bg-hairline" />
         or
-        <span className="h-px flex-1 bg-neutral-200" />
+        <span className="h-px flex-1 bg-hairline" />
       </div>
 
       <div className="space-y-2">
-        <label className="block text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <label className="block text-xs font-medium uppercase tracking-wide text-muted">
           Connect with a QR code
         </label>
         <input
@@ -400,7 +400,7 @@ function BunkerTab({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={generateQr}
-          className="w-full rounded-xl border border-neutral-300 px-4 py-2.5 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100"
+          className="w-full rounded-xl border border-hairline px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-paper"
         >
           Generate QR code
         </button>
@@ -450,7 +450,7 @@ function NsecTab({ onClose }: { onClose: () => void }) {
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+          <label className="text-xs font-medium uppercase tracking-wide text-muted">
             Private key
           </label>
           <button

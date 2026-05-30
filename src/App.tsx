@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
-import {
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { AmbientBackground } from "./components/AmbientBackground";
 import { Header } from "./components/Header";
 import { LoginModal } from "./components/LoginModal";
 import { PopCreator } from "./components/PopCreator";
@@ -20,63 +16,72 @@ function Home({ onCreateClick }: { onCreateClick: () => void }) {
   }, []);
 
   return (
-    <main className="mx-auto max-w-3xl px-6 pb-24">
-      {/* Hero */}
-      <section className="flex flex-col items-center gap-6 pt-16 text-center">
-        <img src="/pop.png" alt="Pop logo" className="h-40 w-40 rounded-3xl" />
-        <p className="mx-auto max-w-md text-lg text-muted">
-          A guestbook for your event that lives forever. Spin one up, share the
-          link, and let everyone leave notes, photos, and tips — no app, no
-          account required.
-        </p>
-        <button
-          type="button"
-          onClick={onCreateClick}
-          className="rounded-xl bg-terracotta px-6 py-3 text-base font-semibold text-polaroid shadow-sm transition hover:bg-terracotta-deep"
-        >
-          Create an event
-        </button>
-      </section>
+    <div className="relative">
+      {/* Warm candlelit atmosphere behind the whole landing. */}
+      <AmbientBackground />
 
-      {/* Example */}
-      <section className="mt-20 flex flex-col items-center gap-6 text-center">
-        <div className="space-y-1.5">
-          <h2 className="text-2xl font-semibold tracking-tight text-ink">
-            Here's what your guestbook looks like
-          </h2>
-          <p className="text-sm text-muted">
-            Your event gets its own warm, shareable page.
+      <main className="relative z-10 mx-auto max-w-3xl px-6 pb-24">
+        {/* Hero */}
+        <section className="flex flex-col items-center gap-6 pt-16 text-center">
+          <img
+            src="/pop.png"
+            alt="Pop logo"
+            className="h-40 w-40 rounded-3xl shadow-[0_10px_30px_rgba(36,30,26,0.18)]"
+          />
+          <p className="mx-auto max-w-md text-lg text-muted">
+            A guestbook for your event that lives forever. Spin one up, share the
+            link, and let everyone leave notes, photos, and tips — no app, no
+            account required.
           </p>
-        </div>
-        <PopHeaderCard
-          name={SAMPLE_POP.name}
-          description={SAMPLE_POP.description}
-          picture={SAMPLE_POP.picture}
-          banner={SAMPLE_POP.banner}
-        />
-      </section>
+          <button
+            type="button"
+            onClick={onCreateClick}
+            className="rounded-xl bg-terracotta px-6 py-3 text-base font-semibold text-polaroid shadow-sm transition hover:bg-terracotta-deep active:translate-y-px"
+          >
+            Create an event
+          </button>
+        </section>
 
-      {/* How it works */}
-      <section className="mt-20">
-        <div className="grid gap-8 sm:grid-cols-3">
-          <Step
-            n="1"
-            title="Create a guestbook"
-            body="Name your event, add a cover photo and banner, and you're live in seconds."
+        {/* Example */}
+        <section className="mt-20 flex flex-col items-center gap-6 text-center">
+          <div className="space-y-1.5">
+            <h2 className="text-2xl font-semibold tracking-tight text-ink">
+              Here's what your guestbook looks like
+            </h2>
+            <p className="text-sm text-muted">
+              Your event gets its own warm, shareable page.
+            </p>
+          </div>
+          <PopHeaderCard
+            name={SAMPLE_POP.name}
+            description={SAMPLE_POP.description}
+            picture={SAMPLE_POP.picture}
+            banner={SAMPLE_POP.banner}
           />
-          <Step
-            n="2"
-            title="Share the link"
-            body="Drop the link in the invite, on a card, or behind a QR code at the door."
-          />
-          <Step
-            n="3"
-            title="Collect the memories"
-            body="Guests leave notes and photos — and can zap you a tip — that you keep forever."
-          />
-        </div>
-      </section>
-    </main>
+        </section>
+
+        {/* How it works */}
+        <section className="mt-20">
+          <div className="grid gap-8 sm:grid-cols-3">
+            <Step
+              n="1"
+              title="Create a guestbook"
+              body="Name your event, add a cover photo and banner, and you're live in seconds."
+            />
+            <Step
+              n="2"
+              title="Share the link"
+              body="Drop the link in the invite, on a card, or behind a QR code at the door."
+            />
+            <Step
+              n="3"
+              title="Collect the memories"
+              body="Guests leave notes and photos — and can zap you a tip — that you keep forever."
+            />
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }
 
@@ -114,7 +119,7 @@ function CreatePage({ onLoginClick }: { onLoginClick: () => void }) {
         type="button"
         onClick={onLoginClick}
         disabled={status === "connecting"}
-        className="mt-6 rounded-xl bg-terracotta px-5 py-2.5 text-sm font-semibold text-polaroid transition hover:bg-terracotta-deep disabled:opacity-50"
+        className="mt-6 rounded-xl bg-terracotta px-5 py-2.5 text-sm font-semibold text-polaroid transition hover:bg-terracotta-deep active:translate-y-px disabled:opacity-50 disabled:active:translate-y-0"
       >
         {status === "connecting" ? "Connecting…" : "Log in"}
       </button>
@@ -167,10 +172,7 @@ function App() {
       {!fullBleed && <Header onLoginClick={() => setLoginOpen(true)} />}
 
       <Routes>
-        <Route
-          path="/"
-          element={<Home onCreateClick={handleCreateClick} />}
-        />
+        <Route path="/" element={<Home onCreateClick={handleCreateClick} />} />
         <Route
           path="/create"
           element={<CreatePage onLoginClick={() => setLoginOpen(true)} />}
