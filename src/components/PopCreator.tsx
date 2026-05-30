@@ -26,6 +26,9 @@ export function PopCreator({ host }: { host: string }) {
   );
 }
 
+const inputCls =
+  "w-full rounded-lg border border-hairline bg-polaroid px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-terracotta";
+
 function CreatePopForm() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -37,6 +40,8 @@ function CreatePopForm() {
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit = name.trim().length > 0 && uploading === 0 && !submitting;
+  const onUploadingChange = (up: boolean) =>
+    setUploading((n) => n + (up ? 1 : -1));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,59 +63,78 @@ function CreatePopForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6"
-    >
-      <h2 className="text-lg font-semibold">Create a Pop</h2>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="space-y-1">
+        <h2 className="text-2xl font-bold tracking-tight text-ink">
+          Create your event
+        </h2>
+        <p className="text-sm text-muted">
+          Add a banner and a cover photo, then name your guestbook.
+        </p>
+      </div>
 
-      <label className="block space-y-1.5">
-        <span className="text-sm text-neutral-500">Event name</span>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Sarah & Tom's Wedding"
-          maxLength={120}
-          className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
-        />
-      </label>
+      {/* Profile-header composition: banner with the cover photo overlapping
+          its bottom edge — this is exactly how the event page reads. */}
+      <div className="overflow-hidden rounded-2xl border border-hairline bg-polaroid">
+        <div className="relative">
+          <ImageCropField
+            label="Banner"
+            aspect={3}
+            value={banner}
+            onChange={setBanner}
+            onUploadingChange={onUploadingChange}
+            overlayControls
+            hideLabel
+          />
+          <div className="absolute -bottom-9 left-5 h-[72px] w-[72px] rounded-full ring-4 ring-polaroid">
+            <ImageCropField
+              label="Cover photo"
+              aspect={1}
+              value={picture}
+              onChange={setPicture}
+              onUploadingChange={onUploadingChange}
+              circle
+              fill
+              overlayControls
+              hideLabel
+            />
+          </div>
+        </div>
 
-      <label className="block space-y-1.5">
-        <span className="text-sm text-neutral-500">Description</span>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Leave us a note from the big day."
-          rows={3}
-          maxLength={1000}
-          className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
-        />
-      </label>
+        <div className="space-y-4 px-5 pb-5 pt-12">
+          <label className="block space-y-1.5">
+            <span className="text-sm text-muted">Event name</span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Sarah & Tom's Wedding"
+              maxLength={120}
+              className={inputCls}
+            />
+          </label>
 
-      <ImageCropField
-        label="Cover picture"
-        aspect={1}
-        value={picture}
-        onChange={setPicture}
-        onUploadingChange={(up) => setUploading((n) => n + (up ? 1 : -1))}
-      />
+          <label className="block space-y-1.5">
+            <span className="text-sm text-muted">Description</span>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Leave us a note from the big day."
+              rows={3}
+              maxLength={1000}
+              className={"resize-y " + inputCls}
+            />
+          </label>
+        </div>
+      </div>
 
-      <ImageCropField
-        label="Banner"
-        aspect={4 / 3}
-        value={banner}
-        onChange={setBanner}
-        onUploadingChange={(up) => setUploading((n) => n + (up ? 1 : -1))}
-      />
-
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-terracotta">{error}</p>}
 
       <button
         type="submit"
         disabled={!canSubmit}
-        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+        className="w-full rounded-lg bg-terracotta px-4 py-2.5 text-sm font-semibold text-polaroid transition hover:bg-terracotta-deep disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {submitting ? "Publishing…" : "Create Pop"}
+        {submitting ? "Publishing…" : "Create event"}
       </button>
     </form>
   );
@@ -118,24 +142,24 @@ function CreatePopForm() {
 
 function PopList({ pops, loading }: { pops: Pop[]; loading: boolean }) {
   if (loading) {
-    return <p className="text-sm text-neutral-500">Loading your Pops…</p>;
+    return <p className="text-sm text-muted">Loading your Pops…</p>;
   }
   if (pops.length === 0) {
     return (
-      <p className="text-sm text-neutral-500">
-        No Pops yet. Create your first one above.
+      <p className="text-sm text-muted">
+        No events yet. Create your first one above.
       </p>
     );
   }
 
   return (
     <div className="space-y-3">
-      <h2 className="text-lg font-semibold">Your Pops</h2>
+      <h2 className="text-lg font-semibold text-ink">Your events</h2>
       <ul className="space-y-3">
         {pops.map((pop) => (
           <li
             key={pop.id}
-            className="rounded-xl border border-neutral-200 bg-white p-4"
+            className="rounded-xl border border-hairline bg-polaroid p-4"
           >
             <Link to={`/e/${pop.nevent}`} className="flex items-start gap-3">
               {pop.picture && (
@@ -146,11 +170,11 @@ function PopList({ pops, loading }: { pops: Pop[]; loading: boolean }) {
                 />
               )}
               <div className="min-w-0">
-                <h3 className="font-medium hover:underline">{pop.name}</h3>
+                <h3 className="font-medium text-ink hover:underline">
+                  {pop.name}
+                </h3>
                 {pop.description && (
-                  <p className="mt-1 text-sm text-neutral-500">
-                    {pop.description}
-                  </p>
+                  <p className="mt-1 text-sm text-muted">{pop.description}</p>
                 )}
               </div>
             </Link>
@@ -173,7 +197,7 @@ function CopyLink({ nevent }: { nevent: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="mt-3 truncate font-mono text-xs text-neutral-500 transition hover:text-neutral-800"
+      className="mt-3 truncate font-mono text-xs text-muted transition hover:text-ink"
       title="Copy shareable link"
     >
       {copied ? "Copied!" : `${nevent.slice(0, 24)}…`}

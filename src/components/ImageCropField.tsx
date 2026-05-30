@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { Modal } from "./Modal";
 import { uploadImageBlob } from "../lib/blossom";
@@ -11,6 +11,14 @@ import { uploadImageBlob } from "../lib/blossom";
  *
  * `onUploadingChange` lets the parent gate its submit button while an upload is
  * in flight, so a Pop is never published with a half-uploaded image.
+ *
+ * Layout knobs let the creator compose a profile-header shape:
+ *  - `circle` renders the preview/placeholder as a round avatar.
+ *  - `fill` makes it fill a parent-sized box (h/w 100%) instead of using `aspect`.
+ *  - `hideLabel` drops the heading (the parent labels it).
+ *  - `overlayControls` floats a remove button over the image and makes the
+ *    image itself click-to-replace, so there's no controls row breaking the
+ *    composition.
  */
 export function ImageCropField({
   label,
@@ -18,12 +26,22 @@ export function ImageCropField({
   value,
   onChange,
   onUploadingChange,
+  circle = false,
+  fill = false,
+  hideLabel = false,
+  overlayControls = false,
+  className,
 }: {
   label: string;
   aspect: number;
   value: string | null;
   onChange: (url: string | null) => void;
   onUploadingChange?: (uploading: boolean) => void;
+  circle?: boolean;
+  fill?: boolean;
+  hideLabel?: boolean;
+  overlayControls?: boolean;
+  className?: string;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Object URL of the just-picked file, shown in the crop modal.
@@ -71,44 +89,81 @@ export function ImageCropField({
     }
   }
 
+  const shape = circle ? "rounded-full" : "rounded-lg";
+  const boxStyle: CSSProperties = fill ? {} : { aspectRatio: aspect };
+  const boxSize = fill ? "h-full w-full" : "w-full";
+  const pick = () => fileInputRef.current?.click();
+
   return (
-    <div className="space-y-1.5">
-      <span className="text-sm text-neutral-500">{label}</span>
+    <div className={className ?? (overlayControls ? undefined : "space-y-1.5")}>
+      {!hideLabel && <span className="text-sm text-muted">{label}</span>}
 
       {value ? (
-        <div className="space-y-2">
-          <img
-            src={value}
-            alt={`${label} preview`}
-            style={{ aspectRatio: aspect }}
-            className="w-full rounded-lg border border-neutral-200 object-cover"
-          />
-          <div className="flex gap-2">
+        overlayControls ? (
+          <div className={"relative " + boxSize} style={boxStyle}>
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 transition hover:bg-neutral-50"
+              onClick={pick}
+              aria-label={`Replace ${label.toLowerCase()}`}
+              className={
+                "group block h-full w-full overflow-hidden " + shape
+              }
             >
-              Replace
+              <img
+                src={value}
+                alt={`${label} preview`}
+                className="h-full w-full object-cover transition group-hover:brightness-90"
+              />
             </button>
             <button
               type="button"
               onClick={() => onChange(null)}
-              className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-50"
+              aria-label={`Remove ${label.toLowerCase()}`}
+              className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink/70 text-sm text-polaroid transition hover:bg-ink"
             >
-              Remove
+              ×
             </button>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-2">
+            <img
+              src={value}
+              alt={`${label} preview`}
+              style={{ aspectRatio: aspect }}
+              className={"w-full border border-hairline object-cover " + shape}
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={pick}
+                className="rounded-lg border border-hairline px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-paper"
+              >
+                Replace
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange(null)}
+                className="rounded-lg border border-hairline px-3 py-1.5 text-xs font-medium text-terracotta transition hover:bg-paper"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        )
       ) : (
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
-          style={{ aspectRatio: aspect }}
-          className="flex w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 text-sm text-neutral-500 transition hover:border-neutral-400 hover:text-neutral-700"
+          onClick={pick}
+          style={boxStyle}
+          className={
+            "flex flex-col items-center justify-center gap-1 border border-dashed border-hairline bg-paper text-muted transition hover:border-terracotta hover:text-ink " +
+            shape +
+            " " +
+            boxSize
+          }
         >
           <span className="text-2xl leading-none">＋</span>
-          <span>Add {label.toLowerCase()}</span>
+          {!circle && <span className="text-sm">Add {label.toLowerCase()}</span>}
         </button>
       )}
 
@@ -127,7 +182,7 @@ export function ImageCropField({
       >
         <div className="space-y-4">
           <div
-            className="relative w-full overflow-hidden rounded-lg bg-neutral-900"
+            className="relative w-full overflow-hidden rounded-lg bg-ink"
             style={{ aspectRatio: aspect }}
           >
             {src && (
@@ -136,6 +191,7 @@ export function ImageCropField({
                 crop={crop}
                 zoom={zoom}
                 aspect={aspect}
+                cropShape={circle ? "round" : "rect"}
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={(_, pixels) => setAreaPixels(pixels)}
@@ -143,7 +199,7 @@ export function ImageCropField({
             )}
           </div>
 
-          <label className="flex items-center gap-3 text-sm text-neutral-500">
+          <label className="flex items-center gap-3 text-sm text-muted">
             <span>Zoom</span>
             <input
               type="range"
@@ -152,27 +208,27 @@ export function ImageCropField({
               step={0.01}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
-              className="flex-1"
+              className="flex-1 accent-terracotta"
             />
           </label>
 
           {uploading && (
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-hairline">
               <div
-                className="h-full rounded-full bg-indigo-600 transition-all"
+                className="h-full rounded-full bg-terracotta transition-all"
                 style={{ width: `${Math.round(progress * 100)}%` }}
               />
             </div>
           )}
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-terracotta">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={closeModal}
               disabled={uploading}
-              className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-40"
+              className="rounded-lg border border-hairline px-4 py-2 text-sm font-medium text-ink transition hover:bg-paper disabled:opacity-40"
             >
               Cancel
             </button>
@@ -180,7 +236,7 @@ export function ImageCropField({
               type="button"
               onClick={confirmCrop}
               disabled={uploading || !areaPixels}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg bg-terracotta px-4 py-2 text-sm font-medium text-polaroid transition hover:bg-terracotta-deep disabled:cursor-not-allowed disabled:opacity-40"
             >
               {uploading ? "Uploading…" : "Use photo"}
             </button>

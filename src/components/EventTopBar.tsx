@@ -54,7 +54,7 @@ export function EventTopBar({
         {/* Left: home + host identity */}
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <Link to="/" className="hidden shrink-0 sm:block" aria-label="Pop home">
-            <img src="/logo-dark.jpeg" alt="Pop" className="h-7 w-7 rounded-lg" />
+            <img src="/pop.png" alt="Pop" className="h-7 w-7 rounded-lg" />
           </Link>
           {eventAvatar ? (
             <img
