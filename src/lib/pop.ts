@@ -40,7 +40,8 @@ export async function createPop(input: {
   const event = new NDKEvent(ndk);
   event.kind = POP_KIND;
   event.tags = [
-    ["d", crypto.randomUUID()],
+    // Fixed `d` → one guestbook per host; re-publishing edits it in place.
+    ["d", "pop"],
     ["title", input.name],
     ["alt", `Pop guestbook: ${input.name}`],
   ];
@@ -61,6 +62,25 @@ export async function fetchPops(host: string): Promise<Pop[]> {
   const newest = new Map<string, NDKEvent>();
   for (const event of events) {
     const key = event.dTag ?? event.id;
+    const existing = newest.get(key);
+    if (!existing || (event.created_at ?? 0) > (existing.created_at ?? 0)) {
+      newest.set(key, event);
+    }
+  }
+
+  return [...newest.values()]
+    .map(toPop)
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** Fetch every Pop across relays for the public, searchable homepage list. */
+export async function fetchAllPops(limit = 200): Promise<Pop[]> {
+  const events = await ndk.fetchEvents({ kinds: [POP_KIND], limit });
+
+  // Addressable events: keep only the newest copy per host + `d` tag.
+  const newest = new Map<string, NDKEvent>();
+  for (const event of events) {
+    const key = `${event.pubkey}:${event.dTag ?? event.id}`;
     const existing = newest.get(key);
     if (!existing || (event.created_at ?? 0) > (existing.created_at ?? 0)) {
       newest.set(key, event);

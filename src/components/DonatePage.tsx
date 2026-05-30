@@ -3,7 +3,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Link, useParams } from "react-router-dom";
 import { DonorRow } from "./DonorRow";
+import { SignForm } from "./SignForm";
 import { useDonations } from "../hooks/useDonations";
+import { useGuestbookEntries } from "../hooks/useGuestbookEntries";
+import { GuestbookCanvasPage } from "../pages/GuestbookCanvasPage";
 import { connectNdk, ndk } from "../lib/ndk";
 import {
   buildSignedZapRequest,
@@ -38,7 +41,9 @@ export function DonatePage() {
 
 function Donate({ hex, npub }: { hex: string; npub: string }) {
   const [profile, setProfile] = useState<NDKUserProfile | null>(null);
+  const [wallOpen, setWallOpen] = useState(false);
   const { totalSats, count, donations, loading } = useDonations(hex);
+  const { posts: entries } = useGuestbookEntries(hex);
   const address = lightningAddress(npub);
 
   useEffect(() => {
@@ -58,6 +63,10 @@ function Donate({ hex, npub }: { hex: string; npub: string }) {
   const displayName =
     profile?.displayName || profile?.name || shortNpub(hex);
   const avatar = profile?.picture || profile?.image;
+
+  if (wallOpen) {
+    return <GuestbookCanvasPage host={hex} onClose={() => setWallOpen(false)} />;
+  }
 
   return (
     <div className="mx-auto max-w-xl px-6 py-12">
@@ -117,6 +126,73 @@ function Donate({ hex, npub }: { hex: string; npub: string }) {
         Only zaps appear here. A plain Lightning payment to the address won’t be
         counted — use the button above (or zap from your Nostr client).
       </p>
+
+      {/* Guestbook */}
+      <div className="mt-12 border-t border-neutral-800 pt-10">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+            Guestbook
+            {entries.length > 0 && (
+              <span className="ml-2 text-neutral-600">
+                {entries.length} signature{entries.length === 1 ? "" : "s"}
+              </span>
+            )}
+          </h2>
+          {entries.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setWallOpen(true)}
+              className="rounded-lg border border-neutral-700 px-3 py-1.5 text-sm font-medium text-neutral-200 transition hover:border-neutral-500 hover:text-white"
+            >
+              Open the wall →
+            </button>
+          )}
+        </div>
+
+        {entries.length > 0 && (
+          <ul className="mt-5 space-y-3">
+            {entries.slice(0, 5).map((post) => (
+              <li
+                key={post.id}
+                className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4"
+              >
+                <div className="flex items-center gap-2">
+                  {post.author.avatarUrl ? (
+                    <img
+                      src={post.author.avatarUrl}
+                      alt=""
+                      className="h-6 w-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-700 text-[10px] font-bold uppercase text-neutral-200">
+                      {post.author.displayName.slice(0, 1)}
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-neutral-200">
+                    {post.author.displayName}
+                  </span>
+                </div>
+                {post.message && (
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-300">
+                    {post.message}
+                  </p>
+                )}
+                {post.media && (
+                  <img
+                    src={post.media.url}
+                    alt=""
+                    className="mt-2 max-h-64 rounded-lg object-cover"
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-6">
+          <SignForm host={hex} />
+        </div>
+      </div>
     </div>
   );
 }
