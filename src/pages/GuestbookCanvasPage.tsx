@@ -1,21 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CanvasController, type LodMode } from "../canvas/CanvasController";
-import { loadPosts } from "../data/mockPosts";
-import type { Post } from "../types/post";
+import { useGuestbookEntries } from "../hooks/useGuestbookEntries";
 import { DetailModal } from "../components/DetailModal";
 import { DomOverlay } from "../components/DomOverlay";
 import { PixiStage } from "../components/PixiStage";
 import { SearchPill } from "../components/SearchPill";
 
-type Status = "loading" | "empty" | "ready";
-
-export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
+export function GuestbookCanvasPage({
+  host,
+  onClose,
+}: {
+  host: string;
+  onClose?: () => void;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<CanvasController | null>(null);
 
+  const { posts, loading } = useGuestbookEntries(host);
+  const status = loading ? "loading" : posts.length ? "ready" : "empty";
+
   const [ready, setReady] = useState(false);
-  const [posts, setPosts] = useState<Post[] | null>(null);
-  const [status, setStatus] = useState<Status>("loading");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [lod, setLod] = useState<{ mode: LodMode; ids: string[] }>({
@@ -50,23 +54,9 @@ export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
     };
   }, []);
 
-  // ---- load data ----
-  useEffect(() => {
-    let alive = true;
-    loadPosts().then((p) => {
-      if (alive) {
-        setPosts(p);
-        setStatus(p.length ? "ready" : "empty");
-      }
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   // ---- push posts into the canvas once both are ready ----
   useEffect(() => {
-    if (ready && posts && controllerRef.current) {
+    if (ready && controllerRef.current) {
       controllerRef.current.setPosts(posts);
     }
   }, [ready, posts]);
@@ -74,7 +64,7 @@ export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
   // ---- search: dim non-matching cards in both layers ----
   const matches = useMemo<Set<string> | null>(() => {
     const q = query.trim().toLowerCase();
-    if (!q || !posts) return null;
+    if (!q) return null;
     const set = new Set<string>();
     for (const p of posts) {
       if (
@@ -113,7 +103,7 @@ export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
   };
 
   const selectedPost = selectedId
-    ? posts?.find((p) => p.id === selectedId) ?? null
+    ? posts.find((p) => p.id === selectedId) ?? null
     : null;
 
   return (
