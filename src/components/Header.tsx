@@ -36,14 +36,8 @@ export function Header({ onLoginClick }: HeaderProps) {
     <header className="sticky top-0 z-40 border-b border-hairline bg-polaroid/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
         <Link to="/" className="flex items-center gap-2">
-          <img
-            src="/logo-dark.jpeg"
-            alt="Pop logo"
-            className="h-8 w-8 rounded-lg"
-          />
-          <span className="text-lg font-bold tracking-tight text-ink">
-            Pop
-          </span>
+          <img src="/pop.png" alt="Pop logo" className="h-8 w-8 rounded-lg" />
+          <span className="text-lg font-bold tracking-tight text-ink">Pop</span>
         </Link>
 
         {authed ? (
@@ -89,7 +83,7 @@ export function Header({ onLoginClick }: HeaderProps) {
             type="button"
             onClick={onLoginClick}
             disabled={status === "connecting"}
-            className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-polaroid transition hover:bg-avatar-ink active:translate-y-px disabled:opacity-50 disabled:active:translate-y-0"
+            className="rounded-xl bg-terracotta px-4 py-2 text-sm font-semibold text-polaroid transition hover:bg-terracotta-deep active:translate-y-px disabled:opacity-50 disabled:active:translate-y-0"
           >
             {status === "connecting" ? "Connecting…" : "Log in"}
           </button>

@@ -12,6 +12,10 @@
   --color-hairline: #e3ddd8;
   --color-avatar: #dcd6d3;
   --color-avatar-ink: #5b544f;
+  /* Terracotta — the single accent (DESIGN.md §2). Carries primary actions
+     (Create, Log in, Sign), links, focus rings. Spent like a date-stamp. */
+  --color-terracotta: oklch(57% 0.14 38);
+  --color-terracotta-deep: oklch(50% 0.145 38);
   /* Flash Gold — oklch(82% 0.12 80). A *moment*, not a surface: zap-send only. */
   --color-flash: #e3ad4b;
   --color-flash-deep: #c9923a;

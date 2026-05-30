@@ -56,7 +56,7 @@ export function EventTopBar({
           className="pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-polaroid/90 shadow-sm ring-1 ring-hairline backdrop-blur transition hover:bg-polaroid"
           aria-label="Pop home"
         >
-          <img src="/logo-dark.jpeg" alt="" className="h-6 w-6 rounded-md" />
+          <img src="/pop.png" alt="" className="h-6 w-6 rounded-md" />
         </Link>
 
         <div className="pointer-events-auto flex items-center gap-2">
