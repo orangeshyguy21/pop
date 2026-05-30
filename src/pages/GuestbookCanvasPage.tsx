@@ -9,7 +9,7 @@ import { SearchPill } from "../components/SearchPill";
 
 type Status = "loading" | "empty" | "ready";
 
-export function GuestbookCanvasPage() {
+export function GuestbookCanvasPage({ onClose }: { onClose?: () => void }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<CanvasController | null>(null);
 
@@ -131,6 +131,17 @@ export function GuestbookCanvasPage() {
           matches={matches}
           onSelect={handleTap}
         />
+      )}
+
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute left-5 top-5 z-20 flex h-9 items-center gap-1 rounded-lg bg-white/90 px-3 text-sm font-medium text-neutral-700 shadow hover:bg-white"
+          aria-label="Back"
+        >
+          ← Back
+        </button>
       )}
 
       <SearchPill value={query} onChange={setQuery} />
