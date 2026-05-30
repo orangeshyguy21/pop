@@ -73,7 +73,7 @@ export function ImageCropField({
 
   return (
     <div className="space-y-1.5">
-      <span className="text-sm text-neutral-500">{label}</span>
+      <span className="text-sm text-muted">{label}</span>
 
       {value ? (
         <div className="space-y-2">
@@ -81,20 +81,20 @@ export function ImageCropField({
             src={value}
             alt={`${label} preview`}
             style={{ aspectRatio: aspect }}
-            className="w-full rounded-lg border border-neutral-200 object-cover"
+            className="w-full rounded-lg border border-hairline object-cover"
           />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 transition hover:bg-neutral-50"
+              className="rounded-lg border border-hairline px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-paper"
             >
               Replace
             </button>
             <button
               type="button"
               onClick={() => onChange(null)}
-              className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-50"
+              className="rounded-lg border border-hairline px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-50"
             >
               Remove
             </button>
@@ -105,7 +105,7 @@ export function ImageCropField({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           style={{ aspectRatio: aspect }}
-          className="flex w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 text-sm text-neutral-500 transition hover:border-neutral-400 hover:text-neutral-700"
+          className="flex w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-hairline bg-paper text-sm text-muted transition hover:border-muted hover:text-ink"
         >
           <span className="text-2xl leading-none">＋</span>
           <span>Add {label.toLowerCase()}</span>
@@ -127,7 +127,7 @@ export function ImageCropField({
       >
         <div className="space-y-4">
           <div
-            className="relative w-full overflow-hidden rounded-lg bg-neutral-900"
+            className="relative w-full overflow-hidden rounded-lg bg-ink"
             style={{ aspectRatio: aspect }}
           >
             {src && (
@@ -143,7 +143,7 @@ export function ImageCropField({
             )}
           </div>
 
-          <label className="flex items-center gap-3 text-sm text-neutral-500">
+          <label className="flex items-center gap-3 text-sm text-muted">
             <span>Zoom</span>
             <input
               type="range"
@@ -157,9 +157,9 @@ export function ImageCropField({
           </label>
 
           {uploading && (
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-hairline">
               <div
-                className="h-full rounded-full bg-indigo-600 transition-all"
+                className="h-full rounded-full bg-ink transition-all"
                 style={{ width: `${Math.round(progress * 100)}%` }}
               />
             </div>
@@ -172,7 +172,7 @@ export function ImageCropField({
               type="button"
               onClick={closeModal}
               disabled={uploading}
-              className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-40"
+              className="rounded-lg border border-hairline px-4 py-2 text-sm font-medium text-ink transition hover:bg-paper disabled:opacity-40"
             >
               Cancel
             </button>
@@ -180,7 +180,7 @@ export function ImageCropField({
               type="button"
               onClick={confirmCrop}
               disabled={uploading || !areaPixels}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-polaroid transition hover:bg-avatar-ink disabled:cursor-not-allowed disabled:opacity-40"
             >
               {uploading ? "Uploading…" : "Use photo"}
             </button>
